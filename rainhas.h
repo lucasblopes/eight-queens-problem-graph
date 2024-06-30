@@ -1,6 +1,9 @@
 #ifndef RAINHAS_H
 #define RAINHAS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 //------------------------------------------------------------------------------
 // representa uma casa do tabuleiro
 //
