@@ -1,17 +1,18 @@
 #include "rainhas.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-void mostra_resposta(unsigned int n, unsigned int* r) {
+void mostra_resposta(unsigned int n, unsigned int *r) {
 	for (unsigned int i = 0; i < n; i++) {
 		printf("%u ", r[i]);
 	}
-
 	printf("\n");
 }
 
-// verifica se a casa (lin, col) nao esta nas casas proibidas
-int nao_proibido(unsigned int lin, unsigned int col, unsigned int k, casa* c) {
+// Verifica se a casa (lin, col) não está nas casas proibidas
+int nao_proibido(unsigned int lin, unsigned int col, unsigned int k, casa *c) {
 	for (unsigned int i = 0; i < k; i++) {
 		if (c[i].linha == lin && c[i].coluna == col) {
 			return 0;
@@ -20,19 +21,19 @@ int nao_proibido(unsigned int lin, unsigned int col, unsigned int k, casa* c) {
 	return 1;
 }
 
-// verifica se uma rainha na posicao (lin, col) nao ataca nenhuma das demais em r
-int nao_ataca_demais(unsigned int lin, unsigned int col, unsigned int n, unsigned int* r) {
+// Verifica se uma rainha na posição (lin, col) não ataca nenhuma das demais em r
+int nao_ataca_demais(unsigned int lin, unsigned int col, unsigned int n, unsigned int *r) {
 	unsigned int lin1;
 	unsigned int col1;
 
 	for (unsigned int i = 0; i < n; i++) {
 		lin1 = i + 1;
 		col1 = r[i];
-		// nao estao na mesma coluna
+		// Não estão na mesma coluna
 		if (col1 == col) {
 			return 0;
 		}
-		// nao estao na mesma diagonal
+		// Não estão na mesma diagonal
 		if (col1 && abs((int)(col1 - col)) == abs((int)(lin1 - lin))) {
 			return 0;
 		}
@@ -41,7 +42,7 @@ int nao_ataca_demais(unsigned int lin, unsigned int col, unsigned int n, unsigne
 }
 
 // Atualiza a melhor solução encontrada até agora
-void atualiza_r(int* max_rainhas, int num_rainhas, unsigned int* r, unsigned int* r_atual, int n) {
+void atualiza_r(int *max_rainhas, int num_rainhas, unsigned int *r, unsigned int *r_atual, int n) {
 	if (num_rainhas > *max_rainhas) {
 		*max_rainhas = num_rainhas;
 		memcpy(r, r_atual, n * sizeof(*r));
@@ -49,8 +50,8 @@ void atualiza_r(int* max_rainhas, int num_rainhas, unsigned int* r, unsigned int
 }
 
 // Função principal de resolução usando backtracking
-int solve_rainhas_bt(unsigned int n, unsigned int k, casa* c, unsigned int* r,
-					 unsigned int* r_atual, int num_rainhas, int* max_rainhas, int lin) {
+int solve_rainhas_bt(unsigned int n, unsigned int k, casa *c, unsigned int *r,
+					 unsigned int *r_atual, int num_rainhas, int *max_rainhas, int lin) {
 	// Não vale a pena continuar
 	if (num_rainhas + (n - lin) < *max_rainhas) {
 		return 0;
@@ -96,8 +97,8 @@ int solve_rainhas_bt(unsigned int n, unsigned int k, casa* c, unsigned int* r,
 //
 // devolve r
 //
-unsigned int* rainhas_bt(unsigned int n, unsigned int k, casa* c, unsigned int* r) {
-	unsigned int* r_atual = calloc(n, sizeof(*r_atual));
+unsigned int *rainhas_bt(unsigned int n, unsigned int k, casa *c, unsigned int *r) {
+	unsigned int *r_atual = calloc(n, sizeof(*r_atual));
 	int max_rainhas = 0;
 
 	solve_rainhas_bt(n, k, c, r, r_atual, 0, &max_rainhas, 0);
@@ -107,16 +108,149 @@ unsigned int* rainhas_bt(unsigned int n, unsigned int k, casa* c, unsigned int* 
 }
 
 //------------------------------------------------------------------------------
-// computa uma resposta para a instância (n,c) do problema das n
+// Computa uma resposta para a instância (n, c) do problema das n
 // rainhas com casas proibidas usando a modelagem do problema como
-// conjunto independente de um grafo
+// conjunto independente de um grafo.
 //
 // n, c e r são como em rainhas_bt()
 
-unsigned int* rainhas_ci(unsigned int n, unsigned int k, casa* c, unsigned int* r) {
-	n = n;
-	k = k;
-	c = c;
+grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
+	grafo g;
+	g.tam = n * n;
+	g.tamAtivo = g.tam - k;
+	g.matriz = calloc(g.tam, sizeof(int *));
+	for (int i = 0; i < g.tam; i++) {
+		g.matriz[i] = calloc(g.tam, sizeof(int));
+	}
 
+	for (int i = 0; i < k; i++) {
+		unsigned int indexVertice = (n * (c[i].linha - 1)) + (c[i].coluna - 1);
+		for (int j = 0; j < g.tam; j++) {
+			g.matriz[indexVertice][j] = -1;
+			g.matriz[j][indexVertice] = -1;
+		}
+	}
+
+	for (int i = 0; i < g.tam; i++) {
+		if (g.matriz[i][i] == -1) continue;
+
+		for (int j = i + 1; j % n != 0; j++) {
+			if (g.matriz[i][j] == -1) continue;
+			g.matriz[i][j] = 1;
+			g.matriz[j][i] = 1;
+		}
+
+		for (int j = i + n; j < g.tam; j += n) {
+			if (g.matriz[i][j] == -1) continue;
+			g.matriz[i][j] = 1;
+			g.matriz[j][i] = 1;
+		}
+
+		for (int j = (i + n + 1); j < g.tam; j += (n + 1)) {
+			if (g.matriz[i][j] == -1) continue;
+			g.matriz[i][j] = 1;
+			g.matriz[j][i] = 1;
+		}
+
+		for (int j = (i + n - 1); (j % n) != (n - 1) && j < g.tam; j += (n - 1)) {
+			if (g.matriz[i][j] == -1) continue;
+			g.matriz[i][j] = 1;
+			g.matriz[j][i] = 1;
+		}
+	}
+
+	return g;
+}
+
+void printa_restricoes(grafo G) {
+	printf("\n==== RESTRICOES DO GRAFO ====\n");
+	for (int i = 0; i < G.tam; i++) {
+		printf("%d ", i);
+		if (G.matriz[i][i] == -1) {
+			printf("Probido \n");
+			continue;
+		}
+		printf("Ataca: ");
+		for (int j = 0; j < G.tam; j++) {
+			if (G.matriz[i][j] == 1) printf("%d ", j);
+		}
+		printf("\n");
+	}
+	printf("===\n");
+}
+
+void copia_solucao(unsigned int *destino, unsigned int *origem, unsigned int tamanho) {
+	for (unsigned int i = 0; i < tamanho; i++) {
+		destino[i] = origem[i];
+	}
+}
+
+unsigned int *ConjIndep(grafo G, unsigned int n, unsigned int *I, unsigned int *C,
+						unsigned int tamI, unsigned int tamC, unsigned int *melhorSolucao,
+						unsigned int *tamMelhorSolucao) {
+	if (tamI > *tamMelhorSolucao) {
+		copia_solucao(melhorSolucao, I, tamI);
+		*tamMelhorSolucao = tamI;
+	}
+
+	if (tamI == n) {
+		return I;
+	}
+
+	if (tamI + tamC <= *tamMelhorSolucao) {
+		return NULL;
+	}
+
+	unsigned int v = C[tamC - 1];
+	unsigned int *C2 = malloc(tamC * sizeof(unsigned int));
+	unsigned int tamC2 = 0;
+	for (unsigned int i = 0; i < tamC; i++) {
+		if (i != tamC - 1 && G.matriz[v][C[i]] != 1) {
+			C2[tamC2++] = C[i];
+		}
+	}
+
+	I[tamI] = v;
+	unsigned int *R = ConjIndep(G, n, I, C2, tamI + 1, tamC2, melhorSolucao, tamMelhorSolucao);
+	if (R != NULL) {
+		free(C2);
+		return R;
+	}
+
+	R = ConjIndep(G, n, I, C, tamI, tamC - 1, melhorSolucao, tamMelhorSolucao);
+	free(C2);
+	return R;
+}
+
+unsigned int *rainhas_ci(unsigned int n, unsigned int k, casa *c, unsigned int *r) {
+	memset(r, 0, n * sizeof *r);
+	grafo G = monta_grafo_restricoes(n, k, c);
+
+	unsigned int *I = malloc(n * sizeof(unsigned int));
+	unsigned int *C = malloc(G.tamAtivo * sizeof(unsigned int));
+	unsigned int tamI = 0;
+	unsigned int tamC = 0;
+
+	for (unsigned int i = 0; i < G.tam; i++) {
+		if (G.matriz[i][i] != -1) {
+			C[tamC++] = i;
+		}
+	}
+
+	unsigned int *melhorSolucao = malloc(n * sizeof(unsigned int));
+	unsigned int tamMelhorSolucao = 0;
+
+	ConjIndep(G, n, I, C, tamI, tamC, melhorSolucao, &tamMelhorSolucao);
+
+	free(I);
+	free(C);
+
+	for (unsigned int i = 0; i < tamMelhorSolucao; i++) {
+		unsigned int linha = melhorSolucao[i] / n + 1;
+		unsigned int coluna = melhorSolucao[i] % n + 1;
+		r[linha - 1] = coluna;
+	}
+
+	free(melhorSolucao);
 	return r;
 }
