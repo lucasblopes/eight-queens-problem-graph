@@ -62,6 +62,81 @@ unsigned int *rainhas_bt(unsigned int n, unsigned int k, casa *c, unsigned int *
   }
   return NULL;
 }
+
+
+grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
+  // criando grafo
+  struct grafo g;
+  g.tam = n*n;
+  g.tamAtivo = g.tam - k;
+  g.matriz = calloc(g.tam, sizeof(int*));
+  for (int i = 0; i < g.tam; i++) {
+    g.matriz[i] = calloc(g.tam, sizeof(int));
+  }
+
+  // removendo casas proibidas
+  for (int i = 0; i < k; i++) {
+    unsigned int indexVertice =  (n * (c[i].linha - 1)) + (c[i].coluna - 1);
+    for (int j = 0; j < g.tam; j++) {
+      g.matriz[indexVertice][j] = -1; 
+      g.matriz[j][indexVertice] = -1; 
+    }
+  }
+
+  // adicionando restricoes
+  for (int i = 0; i < g.tam; i++) {
+    if (g.matriz[i][i] == -1) continue;
+    
+    // mesma linha (para a direita)
+    for (int j = i + 1; j % n != 0; j++) {
+      if (g.matriz[i][j] == -1) continue;
+      g.matriz[i][j] = 1;
+      g.matriz[j][i] = 1;
+    }
+
+    // mesma coluna (para baixo)
+    for (int j = i + n; j < g.tam; j += n) {
+      if (g.matriz[i][j] == -1) continue;
+      g.matriz[i][j] = 1;
+      g.matriz[j][i] = 1;
+    }
+    
+    // mesma diagonal principal (para baixo)
+    for (int j = (i + n + 1); j < g.tam; j += (n + 1)) {
+      if (g.matriz[i][j] == -1) continue;
+      g.matriz[i][j] = 1;
+      g.matriz[j][i] = 1;      
+    }
+
+    // mesma diagonal secundaria (para baixo)
+    for (int j = (i + n - 1); (j % n) != (n - 1) && j < g.tam; j += (n -1)) {
+      if (g.matriz[i][j] == -1) continue;
+      g.matriz[i][j] = 1;
+      g.matriz[j][i] = 1;
+    }
+  }
+
+  return g;
+}
+
+void printa_restricoes(grafo G) {
+  printf("\n==== RESTRICOES DO GRAFO ====\n");
+  for (int i = 0; i < G.tam; i++) {
+    printf("%d ", i);
+    if (G.matriz[i][i] == -1) {
+      printf("Probido \n");
+      continue;
+    }
+    printf("Ataca: ");
+    for (int j = 0; j < G.tam; j++) {
+      if (G.matriz[i][j] == 1)
+        printf("%d ", j);
+    }
+    printf("\n");
+  }
+  printf("===\n");
+}
+
 //------------------------------------------------------------------------------
 // computa uma resposta para a instância (n,c) do problema das n
 // rainhas com casas proibidas usando a modelagem do problema como
@@ -70,10 +145,6 @@ unsigned int *rainhas_bt(unsigned int n, unsigned int k, casa *c, unsigned int *
 // n, c e r são como em rainhas_bt()
 
 unsigned int *rainhas_ci(unsigned int n, unsigned int k, casa *c, unsigned int *r) {
-
-  n = n;
-  k = k;
-  c = c;
-
-  return r;
+  grafo G = monta_grafo_restricoes(n, k, c);
+  printa_restricoes(G);
 }
