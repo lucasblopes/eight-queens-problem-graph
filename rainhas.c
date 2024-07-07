@@ -114,8 +114,11 @@ unsigned int *rainhas_bt(unsigned int n, unsigned int k, casa *c, unsigned int *
 //
 // n, c e r são como em rainhas_bt()
 
+/* ----- grafos ------ */
+
 grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
-	grafo g;
+	// criando grafo
+	struct grafo g;
 	g.tam = n * n;
 	g.tamAtivo = g.tam - k;
 	g.matriz = calloc(g.tam, sizeof(int *));
@@ -123,6 +126,7 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 		g.matriz[i] = calloc(g.tam, sizeof(int));
 	}
 
+	// removendo casas proibidas
 	for (int i = 0; i < k; i++) {
 		unsigned int indexVertice = (n * (c[i].linha - 1)) + (c[i].coluna - 1);
 		for (int j = 0; j < g.tam; j++) {
@@ -131,27 +135,32 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 		}
 	}
 
+	// adicionando restricoes
 	for (int i = 0; i < g.tam; i++) {
 		if (g.matriz[i][i] == -1) continue;
 
+		// mesma linha (para a direita)
 		for (int j = i + 1; j % n != 0; j++) {
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
 		}
 
+		// mesma coluna (para baixo)
 		for (int j = i + n; j < g.tam; j += n) {
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
 		}
 
+		// mesma diagonal principal (para baixo)
 		for (int j = (i + n + 1); j < g.tam; j += (n + 1)) {
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
 		}
 
+		// mesma diagonal secundaria (para baixo)
 		for (int j = (i + n - 1); (j % n) != (n - 1) && j < g.tam; j += (n - 1)) {
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
@@ -165,92 +174,105 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 void printa_restricoes(grafo G) {
 	printf("\n==== RESTRICOES DO GRAFO ====\n");
 	for (int i = 0; i < G.tam; i++) {
-		printf("%d ", i);
+		printf("%d ", i + 1);
 		if (G.matriz[i][i] == -1) {
-			printf("Probido \n");
+			printf("Proibido \n");
 			continue;
 		}
 		printf("Ataca: ");
 		for (int j = 0; j < G.tam; j++) {
-			if (G.matriz[i][j] == 1) printf("%d ", j);
+			if (G.matriz[i][j] == 1) printf("%d ", j + 1);
 		}
 		printf("\n");
 	}
 	printf("===\n");
 }
 
-void copia_solucao(unsigned int *destino, unsigned int *origem, unsigned int tamanho) {
-	for (unsigned int i = 0; i < tamanho; i++) {
-		destino[i] = origem[i];
-	}
-}
+//------------------------------------------------------------------------------
+// computa uma resposta para a instância (n,c) do problema das n
+// rainhas com casas proibidas usando a modelagem do problema como
+// conjunto independente de um grafo
+//
+// n, c e r são como em rainhas_bt()
 
-unsigned int *ConjIndep(grafo G, unsigned int n, unsigned int *I, unsigned int *C,
-						unsigned int tamI, unsigned int tamC, unsigned int *melhorSolucao,
-						unsigned int *tamMelhorSolucao) {
-	if (tamI > *tamMelhorSolucao) {
-		copia_solucao(melhorSolucao, I, tamI);
-		*tamMelhorSolucao = tamI;
-	}
-
+unsigned int *ConjIndep(grafo G, unsigned int n, unsigned int *I, unsigned int tamI,
+						unsigned int *C, unsigned int tamC) {
+	// Caso base: Se o conjunto independente atual tem o tamanho desejado, retorne-o.
 	if (tamI == n) {
-		return I;
-	}
-
-	if (tamI + tamC <= *tamMelhorSolucao) {
-		return NULL;
-	}
-
-	unsigned int v = C[tamC - 1];
-	unsigned int *C2 = malloc(tamC * sizeof(unsigned int));
-	unsigned int tamC2 = 0;
-	for (unsigned int i = 0; i < tamC; i++) {
-		if (i != tamC - 1 && G.matriz[v][C[i]] != 1) {
-			C2[tamC2++] = C[i];
-		}
-	}
-
-	I[tamI] = v;
-	unsigned int *R = ConjIndep(G, n, I, C2, tamI + 1, tamC2, melhorSolucao, tamMelhorSolucao);
-	if (R != NULL) {
-		free(C2);
+		unsigned int *R = (unsigned int *)malloc(n * sizeof(unsigned int));
+		memcpy(R, I, n * sizeof(unsigned int));
 		return R;
 	}
 
-	R = ConjIndep(G, n, I, C, tamI, tamC - 1, melhorSolucao, tamMelhorSolucao);
-	free(C2);
-	return R;
+	// Se o tamanho do conjunto independente atual mais o conjunto de candidatos é menor que n, não
+	// há solução.
+	if (tamI + tamC < n) {
+		return NULL;
+	}
+
+	// Remova um vértice de C
+	unsigned int v = C[--tamC];
+
+	// Crie um novo conjunto C sem os vizinhos de v (vértices adjacentes a v)
+	unsigned int *newC = (unsigned int *)malloc(tamC * sizeof(unsigned int));
+	unsigned int tamNewC = 0;
+	for (unsigned int i = 0; i < tamC; i++) {
+		if (G.matriz[v][C[i]] != 1) {
+			newC[tamNewC++] = C[i];
+		}
+	}
+
+	// Crie um novo conjunto I incluindo v
+	unsigned int *newI = (unsigned int *)malloc((tamI + 1) * sizeof(unsigned int));
+	memcpy(newI, I, tamI * sizeof(unsigned int));
+	newI[tamI] = v;
+
+	// Chame recursivamente a função com o novo conjunto I e C
+	unsigned int *R = ConjIndep(G, n, newI, tamI + 1, newC, tamNewC);
+
+	// Libere a memória alocada para newI e newC
+	free(newI);
+	free(newC);
+
+	// Se R não é NULL, significa que encontramos um conjunto independente de tamanho n, então
+	// retorne R
+	if (R != NULL) {
+		return R;
+	}
+
+	// Caso contrário, chame recursivamente a função sem incluir v em I
+	return ConjIndep(G, n, I, tamI, C, tamC);
 }
 
 unsigned int *rainhas_ci(unsigned int n, unsigned int k, casa *c, unsigned int *r) {
 	memset(r, 0, n * sizeof *r);
 	grafo G = monta_grafo_restricoes(n, k, c);
+	/* printa_restricoes(G); */
 
-	unsigned int *I = malloc(n * sizeof(unsigned int));
-	unsigned int *C = malloc(G.tamAtivo * sizeof(unsigned int));
-	unsigned int tamI = 0;
-	unsigned int tamC = 0;
+	for (int i = n; i > 0; i--) {
+		unsigned int *I = (unsigned int *)malloc(0);
+		unsigned int *C = (unsigned int *)malloc(G.tamAtivo * sizeof(unsigned int));
+		unsigned int tamC = 0;
+		for (unsigned int j = 0; j < G.tam; j++) {
+			if (G.matriz[j][j] != -1) {
+				C[tamC++] = j;
+			}
+		}
 
-	for (unsigned int i = 0; i < G.tam; i++) {
-		if (G.matriz[i][i] != -1) {
-			C[tamC++] = i;
+		unsigned int *result = ConjIndep(G, i, I, 0, C, tamC);
+
+		free(I);
+		free(C);
+
+		/* cada posicao de r eh a coluna da rainha em cada linha */
+		if (result != NULL) {
+			for (unsigned int j = 0; j < i; j++) {
+				r[result[j] / n] = (result[j] % n) + 1;
+			}
+			free(result);
+			return r;
 		}
 	}
 
-	unsigned int *melhorSolucao = malloc(n * sizeof(unsigned int));
-	unsigned int tamMelhorSolucao = 0;
-
-	ConjIndep(G, n, I, C, tamI, tamC, melhorSolucao, &tamMelhorSolucao);
-
-	free(I);
-	free(C);
-
-	for (unsigned int i = 0; i < tamMelhorSolucao; i++) {
-		unsigned int linha = melhorSolucao[i] / n + 1;
-		unsigned int coluna = melhorSolucao[i] % n + 1;
-		r[linha - 1] = coluna;
-	}
-
-	free(melhorSolucao);
 	return r;
 }
