@@ -141,9 +141,6 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma linha (para a direita)
 		for (int j = i + 1; j % n != 0; j++) {
-      if (i == 5 && j == 55) {
-        printf("errou no 1");
-      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
@@ -151,9 +148,6 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma coluna (para baixo)
 		for (int j = i + n; j < g.tam; j += n) {
-      if (i == 5 && j == 55) {
-        printf("errou no 2");
-      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
@@ -161,9 +155,6 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma diagonal principal (para baixo)
 		for (int j = (i + n + 1);  (j % n) != 0 && j < g.tam; j += (n + 1)) {
-      if (i == 5 && j == 55) {
-        printf("errou no 3");
-      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
@@ -171,9 +162,6 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma diagonal secundaria (para baixo)
 		for (int j = (i + n - 1); (j % n) != (n - 1) && j < g.tam; j += (n - 1)) {
-      if (i == 5 && j == 55) {
-        printf("errou no 4");
-      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
