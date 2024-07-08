@@ -141,6 +141,9 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma linha (para a direita)
 		for (int j = i + 1; j % n != 0; j++) {
+      if (i == 5 && j == 55) {
+        printf("errou no 1");
+      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
@@ -148,13 +151,19 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma coluna (para baixo)
 		for (int j = i + n; j < g.tam; j += n) {
+      if (i == 5 && j == 55) {
+        printf("errou no 2");
+      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
 		}
 
 		// mesma diagonal principal (para baixo)
-		for (int j = (i + n + 1); j < g.tam; j += (n + 1)) {
+		for (int j = (i + n + 1);  (j % n) != 0 && j < g.tam; j += (n + 1)) {
+      if (i == 5 && j == 55) {
+        printf("errou no 3");
+      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
@@ -162,6 +171,9 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 
 		// mesma diagonal secundaria (para baixo)
 		for (int j = (i + n - 1); (j % n) != (n - 1) && j < g.tam; j += (n - 1)) {
+      if (i == 5 && j == 55) {
+        printf("errou no 4");
+      }
 			if (g.matriz[i][j] == -1) continue;
 			g.matriz[i][j] = 1;
 			g.matriz[j][i] = 1;
@@ -174,14 +186,14 @@ grafo monta_grafo_restricoes(unsigned int n, unsigned int k, casa *c) {
 void printa_restricoes(grafo G) {
 	printf("\n==== RESTRICOES DO GRAFO ====\n");
 	for (int i = 0; i < G.tam; i++) {
-		printf("%d ", i + 1);
+		printf("%d ", i );
 		if (G.matriz[i][i] == -1) {
 			printf("Proibido \n");
 			continue;
 		}
 		printf("Ataca: ");
 		for (int j = 0; j < G.tam; j++) {
-			if (G.matriz[i][j] == 1) printf("%d ", j + 1);
+			if (G.matriz[i][j] == 1) printf("%d ", j);
 		}
 		printf("\n");
 	}
@@ -247,7 +259,7 @@ unsigned int *ConjIndep(grafo G, unsigned int n, unsigned int *I, unsigned int t
 unsigned int *rainhas_ci(unsigned int n, unsigned int k, casa *c, unsigned int *r) {
 	memset(r, 0, n * sizeof *r);
 	grafo G = monta_grafo_restricoes(n, k, c);
-	/* printa_restricoes(G); */
+	//printa_restricoes(G);
 
 	for (int i = n; i > 0; i--) {
 		unsigned int *I = (unsigned int *)malloc(0);

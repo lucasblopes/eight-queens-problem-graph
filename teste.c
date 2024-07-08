@@ -41,8 +41,8 @@ static casa *proibe_diagonais(unsigned int n, casa *proibido) {
 }
 
 //------------------------------------------------------------------------------
-int main(int argc, char **argv) {
-	unsigned int n = atoi(argv[1]);
+int main() {
+	unsigned int n = 6;
 	unsigned int *resposta = malloc(n * sizeof(unsigned int));
 
 	unsigned int k = 2 * n;
